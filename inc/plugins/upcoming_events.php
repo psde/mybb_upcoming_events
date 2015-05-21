@@ -3,10 +3,7 @@
  *
  *   Upcoming Events for MyBB
  *   Copyright: © 2011 by Christopher Lorentz
- *   
- *   Website: http://lorus.org/
- *   
- *   Last modified: 05/10/2011 by Lorus
+ *   Copyright: © 2015 by Mathias Garbe
  *
  ***************************************************************************/
 
@@ -32,6 +29,7 @@ if(!defined("IN_MYBB"))
     die("This file cannot be accessed directly.");
 }
 
+$plugins->add_hook("global_start", "upcoming_events_generate_globals");
 $plugins->add_hook("index_start", "upcoming_events_index_start");
 $plugins->add_hook("portal_start", "upcoming_events_portal_start");
 $plugins->add_hook("admin_config_settings_begin", "upcoming_events_lang_settings");
@@ -43,13 +41,13 @@ function upcoming_events_info()
 	
 	return array(
 		"name"			=> $lang->upcoming_events,
-		"description"		=> $lang->upcoming_events_desc,
-		"website"		=> "http://lorus.org/",
-		"author"		=> "Lorus",
-		"authorsite"		=> "http://lorus.org/",
-		"version"		=> "1.31",
+		"description"	=> $lang->upcoming_events_desc,
+		"website"		=> "",
+		"author"		=> "Mathias Garbe, Lorus",
+		"authorsite"	=> "",
+		"version"		=> "1.4",
 		"guid"			=> "b364c7af6f5fc2440c725fb91197bbd5",
-		"compatibility"		=> "16*"
+		"compatibility"	=> "18*"
 	);
 }
 
@@ -203,55 +201,57 @@ function upcoming_events_deactivate()
 	find_replace_templatesets("portal", '#\n\{\$upcoming_events_portal\}#i', "");
 }
 
+function upcoming_events_generate_globals()
+{
+	global $upcoming_events, $upcoming_events_text, $upcoming_events_list, $mybb, $templates, $lang;
+
+	$lang->load("upcoming_events");
+	
+	
+	//generate eventlist
+	$events = get_upcoming_events();
+	
+	if (empty($events))
+	{
+		$line = $lang->upcoming_events_no_events;
+	}
+	else
+	{
+		foreach($events as $event)
+		{
+			if (!empty($event['end'])) 
+			{
+				$line .= $lang->sprintf($lang->upcoming_events_eventline, $event['link'], $event['date'], $event['start'], $event['end']);
+				$line .= $lang->sprintf($lang->upcoming_events_created, $event['poster'])."<br />";
+			}
+			else 
+			{
+				$line .= $lang->sprintf($lang->upcoming_events_eventline_day, $event['link'], $event['date']);
+				$line .= $lang->sprintf($lang->upcoming_events_created, $event['poster'])."<br />";
+			}
+		}
+	}
+	
+	$eventlist .= $line;
+
+	// Globals
+	$upcoming_events_list = $eventlist;
+	$upcoming_events_text = $lang->sprintf($lang->upcoming_events, $mybb->settings['upcoming_events_maxdisplay'], $mybb->settings['upcoming_events_timerange']);
+	eval("\$upcoming_events = \"".$templates->get("upcoming_events")."\";");
+}
+
 function upcoming_events_index_start()
 {
-
-	global $upcoming_events, $mybb, $templates, $lang;
+	global $mybb;
 	
 	if ($mybb->settings['upcoming_events_showindex'] == 1)
 	{
-	
-		$lang->load("upcoming_events");
-		
-		//generate heading
-		$upcoming_events_text = $lang->sprintf($lang->upcoming_events, $mybb->settings['upcoming_events_maxdisplay'], $mybb->settings['upcoming_events_timerange']);
-		
-		//generate eventlist
-		$events = get_upcoming_events();
-		
-		if (empty($events))
-		{
-			$line = $lang->upcoming_events_no_events;
-		}
-		else
-		{
-			foreach($events as $event)
-			{
-				if (!empty($event['end'])) 
-				{
-					$line .= $lang->sprintf($lang->upcoming_events_eventline, $event['link'], $event['date'], $event['start'], $event['end']);
-					$line .= $lang->sprintf($lang->upcoming_events_created, $event['poster'])."<br />";
-				}
-				else 
-				{
-					$line .= $lang->sprintf($lang->upcoming_events_eventline_day, $event['link'], $event['date']);
-					$line .= $lang->sprintf($lang->upcoming_events_created, $event['poster'])."<br />";
-				}
-			}
-		}
-		
-		$eventlist .= $line;
-	
-		//generate template variable
-		eval("\$upcoming_events = \"".$templates->get("upcoming_events")."\";");
-		
+		upcoming_events_generate_globals();
 	}
-
 }
 
 function upcoming_events_portal_start()
 {
-
 	global $upcoming_events_portal, $mybb, $templates, $lang, $theme;
 	
 	if ($mybb->settings['upcoming_events_showportal'] == 1)
