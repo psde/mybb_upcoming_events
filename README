@@ -1,0 +1,10 @@
+This plugin shows upcoming calendar events at the forum index, inside the board stats box and/or at the portal page (portal.php).
+
+Features:
+
+    upcoming events box at index and portal page
+    recognizes MyBB time & date settings (global and user specific)
+    scalable display options (time range and max. entries)
+
+
+Based on http://mods.mybb.com/view/upcoming-events
